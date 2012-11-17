@@ -1,8 +1,4 @@
-﻿param([string]$reqURL, [string]$methodName, [object[]]$arguments=@())
-
-if($reqURL.Length -eq 0 -or $methodName.Length -eq 0 -or $args[0] -eq "-?") {
-    $commandName = [IO.Path]::GetFileNameWithoutExtension($MyInvocation.MyCommand.Name)
-	Write-Host -foregroundColor Yellow @"
+﻿@"
 
 Name:
     $commandName
@@ -23,20 +19,23 @@ Usage:
         The list of argument for XML-RPC.
     
 "@
-	exit 1
-}
-# .NETの型とXML-RPCの型のマッピング
-$xmlTypeMapping = @{
-	[string]="string";
-	[int]="int"; [long]="int";
-	[double]="double"; [float]="double";
-	[bool]="boolean";
-	[DateTime]="dateTime.iso8601";
-}
-# 指定した値をXML-RPC用文字列に変換する。
+
+New-Variable `
+	-Name 'XMLRPCTypeMapping' `
+	-Value @{
+		[string]	= 'string';
+		[int]		= 'int';
+		[long]		= 'int';
+		[double]	= 'double';
+		[float]		= 'double';
+		[bool]		= 'boolean';
+		[DateTime]	= 'dateTime.iso8601';
+	} `
+	-Option Constant `
+;
+
 function ConvertTo-XmlRpcString([object]$value) {
 	if($value -is [Hashtable]) {
-		# Hashtableの場合
 		return [string]::Join([Environment]::NewLine,
 (&{ @"
 <struct>
@@ -54,7 +53,6 @@ $value.GetEnumerator() | % { $name=$_.Key; $value=(ConvertTo-XmlRpcString $_.Val
 "@ })
 )
 	} elseif($value -is [Array]) {
-		# 配列の場合
 		return [string]::Join([Environment]::NewLine,
 (&{ @"
 <array>
@@ -71,9 +69,8 @@ $value | % { $value=(ConvertTo-XmlRpcString $_); @"
 "@ })
 )
 	} else {
-		# それ以外の場合
 		return "<{0}>{1}</{0}>" -f $xmlTypeMapping[$value.GetType()], (& {
-			if($value -is [DateTime]) { return $value.ToString("yyyyMMddTHH:mm:ss") }
+			if($value -is [DateTime]) { return $value.ToString('yyyyMMddTHH:mm:ss') }
 			else {
 				return $value
 			}
@@ -81,7 +78,6 @@ $value | % { $value=(ConvertTo-XmlRpcString $_); @"
 	}
 }
 
-# XML-RPC用リクエストXML
 $reqXml = &{ @"
 <?xml version="1.0" encoding="UTF-8"?>
 <methodCall>
@@ -122,3 +118,6 @@ $resXml = [xml]((New-Object IO.StreamReader($resStream)).ReadToEnd())
 $resStream.Close()
 
 $resXml
+
+Export-ModuleMember `
+;
