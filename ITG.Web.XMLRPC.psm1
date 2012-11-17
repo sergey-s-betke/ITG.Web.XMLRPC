@@ -1,26 +1,4 @@
-﻿@"
-
-Name:
-    $commandName
-
-Description:
-    Requests to Web site by XML-RPC form, and the response is returned by XML form.
-
-Usage:
-    $commandName [[-reqURL] <string>] [[-methodName] <string>] [[-arguments] <object[]>]
-
-    -reqURL <string>
-        The Web site URL to request.
-    
-    -methodName <string>
-        The Method name of XML-RPC.
-        
-    -arguments <object[]>
-        The list of argument for XML-RPC.
-    
-"@
-
-New-Variable `
+﻿New-Variable `
 	-Name 'XMLRPCTypeMapping' `
 	-Value @{
 		[string]	= 'string';
@@ -33,6 +11,40 @@ New-Variable `
 	} `
 	-Option Constant `
 ;
+
+function Invoke-API {
+	<#
+		.Component
+			XMLRPC клиент
+		.Synopsis
+			Вызов метода через XMLRPC интерфейс.
+		.Description
+			Вызов метода через XMLRPC интерфейс.
+			По интерфейсу данный командлет близок к Invoke-Command. Следует предварительно сгенерировать 
+			прокси функцию к Invoke-Command, и уже затем её и дорабатывать.
+		.Link
+			[Wikipedia - XMLRPC](http://wikipedia.org/wiki/XML-RPC)
+		.Example
+			Invoke-API;
+	#>
+
+	[CmdletBinding(
+		SupportsShouldProcess=$true,
+		ConfirmImpact='Medium'
+	)]
+	
+	param (
+		# url точки подключения к XMLRPC сервису
+		[Parameter(
+			Mandatory=$true
+		)]
+		[System.Uri[]]
+		[ValidateNotNullOrEmpty()]
+		[Alias('Uri')]
+		[Alias('CU')]
+		$ConnectionUri
+	)
+};
 
 function ConvertTo-XmlRpcString([object]$value) {
 	if($value -is [Hashtable]) {
@@ -120,4 +132,5 @@ $resStream.Close()
 $resXml
 
 Export-ModuleMember `
+	Invoke-API `
 ;
